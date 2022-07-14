@@ -1,0 +1,97 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Synchronizacja stanów - kategorie {% endblock %}
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.3.0/font/bootstrap-icons.css" rel="stylesheet">
+{% endblock stylesheets %}
+
+{% block content %}
+<div style="min-height: 800px">
+    <h2 style="padding-bottom: 45px">Ustawienia - kategorie do synchronizacji</h2>
+    <p>Wybierz z poniższej listy kategorie, które mają być zsynchronizowane.</p>
+    <button id="select_all">Zaznacz wszystkie</button> <button id="deselect_all">Odznacz wszystkie</button>
+
+
+    <hr>
+    <form id="kategorie_stany_form" method="post">{% csrf_token %}
+        {% for elm in kategorie %}
+        {% if elm.category_id|stringformat:"i" in kategorie_zapisane %}
+        <input checked class="czek" style="width: 20px; height: 20px" type="checkbox"  value= {{ elm.category_id }} > {{ elm.name }}<br>
+        {%else%}
+        <input class="czek" style="width: 20px; height: 20px" type="checkbox"  value= {{ elm.category_id }} > {{ elm.name }}<br>
+        {% endif %}
+
+
+
+        {% endfor %}
+
+        <br><input class="btn btn-secondary" type="submit" value="Zapisz"/>
+    </form>
+
+
+
+
+
+</div>
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+{% load static %}
+<script type="text/javascript" src="{% static 'assets/js/jquery-3.6.0.min.js' %}"></script>
+<script type="text/javascript">
+
+$("#select_all").click(function() {
+         $(".czek").prop('checked', true);
+});
+$("#deselect_all").click(function() {
+         $(".czek").prop('checked', false);
+});
+
+//ustawienia infobox
+    const swalWithBootstrapButtons = Swal.mixin({
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-gray'
+            },
+            buttonsStyling: false
+        });
+//po kliknieciu submit wywolaj skrypt synchronizacji
+    $(document).on("submit","#kategorie_stany_form", function(e){
+            e.preventDefault();
+            kategorie_idsArray = [];
+            const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            $(".czek:checked").each(function(){
+                kategorie_idsArray.push($(this).val());
+            });
+            console.log(kategorie_idsArray);
+              var formData = new FormData();
+                formData.append('kategorie_idsArray[]', kategorie_idsArray);
+            $.ajax({
+            type: 'POST',
+            url: '/zapisz_kategorie/',
+            data: {
+            csrfmiddlewaretoken:csrftoken,
+            'kategorie_ids':kategorie_idsArray
+            },
+            success:function(){
+            console.log('dokonało się');
+            }
+            });
+
+
+             swalWithBootstrapButtons.fire({
+                icon: 'success',
+                title: 'Zapisano',
+                text:  "Wybrane kategorie zostaną zsynchronizowane przy następnej aktualizacji",
+                showConfirmButton: true,
+                timer: 8000
+            })
+});
+
+
+</script>
+
+{% endblock javascripts %}
